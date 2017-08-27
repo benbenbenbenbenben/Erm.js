@@ -241,7 +241,7 @@ const chalk = require('chalk')
 const unit = Symbol()
 const _ = unit
 const _unitmachine = _ => true
-const TRACE = false
+const TRACE = true
 const trace = (...args) => TRACE ? console.log(chalk.gray(...args)) : unit
 class Match {
   constructor(...input) {
@@ -259,7 +259,7 @@ class Match {
           trace(`cycle: ${cycle}`)
           let positionin = this.position
           machines.find((machine, index) => {
-            trace(`\tmachine: ${index} ${machine.innermachine.name} = ${machine.innermachine}`)
+            trace(`\tmachine: ${index} ${machine.machine.name} = ${machine.machine}`)
             let outcome = machine.bind(this)()
             trace(`\t\toutcome: ${outcome}`)
             return outcome
@@ -280,8 +280,9 @@ class Match {
   runmachine(machine) {
     let _input = this.collect(this.input, machine.length)
     trace(`\t\t${_input}`)
+    let start = this.position
     let pass = machine(..._input)
-    let location = { start: 0, length: _input.length }
+    let location = { start: start, length: _input.length }
     if (pass) {
       this.advance(machine.length)
       return { signal: pass, location }
@@ -310,6 +311,7 @@ class Match {
       machine = _unitmachine
 
     let terminator = function (ok, fault = () => unit) {
+      console.log('machine', machine)
       let terminatingmachine = function () {
         try {
           let outcome = this.runmachine(machine)
@@ -320,30 +322,57 @@ class Match {
           fault(e)
         }
       }
-      terminatingmachine.innermachine = machine
+      terminatingmachine.machine = machine
       return /* latebound */ terminatingmachine
     }
 
     // terminator insert-operator
-    terminator.until = function(machine) {
+    terminator.until = function(stopmachine) {
+      let untilterminator = (ok, fault = () => unit) => {
+        trace(`until: ${stopmachine.name}`)
+        let outcomes = []
+        let okredirect = outcome => outcomes.push(outcome)
+        let untillingmachine = terminator(okredirect, fault)
+        let stoppingmachine = function () {
+          let outcome = this.runmachine(stopmachine)
+          if (outcome != unit)
+            outcomes.push(outcome)
+          return outcome != unit
+        }
+        while (true) {
+          let outcome = untillingmachine()
 
-      return terminator
+          break
+        }
+      }
+      return untilterminator
     }
 
     return terminator
   }
+  static arrowwitharity(arrow, desiredarity) {
+    let fillinparameters = [...Array(desiredarity).keys()].map(i => `$i`)
+    let wrapper = new Function(...fillinparameters, 'return this(...arguments)');
+    return wrapper.bind(arrow)
+  }
   static not(machine) {
-    Match.make(machine) // TODO
+    return Match.arrowwitharity((...args) => !machine(...args), machine.length)
   }
 }
 let { match, make, not } = Match
 
 let a = p => p == 'a'
 let b = p => p == 'b'
+let z = p => p == 'z'
+let zz = (p, q) => z(p) && z(q)
+let zzz = (p, q, qq) => z(p) && zz(q, qq)
+let t = p => p == 't'
 
-match('a', 'b', 'zz') (
-  make(a)(result => console.log('a:', result)),
-  make(b)(result => console.log('b:', result)),
+match(...'abzzz000000a0000z000tttttt000ab') (
+//  make(a)(result => console.log('a:', result)),
+//  make(b)(result => console.log('b:', result)),
+//  make(zzz)(result => console.log('zzz:', result)),
+  make(t).until(not(t))(result => console.log('t...t:', result)),
   make(_)(result => console.log('_'))
 )
 
