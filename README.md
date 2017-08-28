@@ -38,9 +38,14 @@ The __make$machine__ also exposes an optional __until__ method which causes the 
 // regex 
 let username = /[^@]*/.match(emailaddress)
 saveUsername(username)
-// erm
+// erm with predicates
 match(emailaddress)(
   make(c => true).until(make(c => c == '@'))(output => saveUsername(output)),
+  _
+)
+// erm with literals
+match(emailaddress)(
+  make(_).until(make('@'))(output => saveUsername(output)),
   _
 )
 ```
