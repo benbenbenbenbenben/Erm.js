@@ -22,6 +22,16 @@ _note: this project is (pre) alpha right now and discussed APIs are subject to c
 
 erm.js will work with arrays of anything, including strings.
 
+### Principle of Operation
+
+- A _match$machine_ has one iterable input and has many _make$machines_.
+- A _match$machine_ sends its iterable input in slices of _n(1,&#8734;)_ items to a _make$machine_ accepting _n_ arguments.
+- When a _make$machine_ predicate returns _false_, the _match$machine_ restarts the slicing cycle sending input to the next _make$machine_ in the chain.
+- A _match$machine_ will terminate when all input is accepted by the _make$machines_.
+- A `_` machine is a _make$machine_ that accepts any input and always advances _match$machine_ 1 position.
+
+### The static Match API
+
 > __match__(_...input_)(__make__\[.__until__(_haltpredicate|value_)](_predicate|value_)(_output_, \[_error_])\[,...])
 
 __match__ accepts _...input_ and returns a __match$machine__ - a callable object that accepts one or more make$machines
@@ -39,11 +49,13 @@ The __make$machine__ also exposes an optional __until__ method which causes the 
 // regex
 let username = /[^@]*/.match(emailaddress)
 saveUsername(username)
+
 // erm with predicates
 match(emailaddress)(
   make(c => true).until(make(c => c == '@'))(output => saveUsername(output)),
   _
 )
+
 // erm with literals
 match(emailaddress)(
   make(_).until('@')(output => saveUsername(output)),
@@ -61,11 +73,11 @@ _output_ is your supplied callback function that is invoked with a single object
 
 _error_ is your optional callback function that is invoked with a single object `{ error, location: { start, length } }`
 
-#### Utility Functions
+#### Utility Functions and Constants
 
-__Match.not__ will invert a predicate while preserving arity e.g. `let TRUE = make(p => true); let FALSE = make(not(TRUE))`
+__Match.not()__ will invert a predicate while preserving arity e.g. `let TRUE = make(p => true); let FALSE = make(not(TRUE))`
 
-  **Match.\_** is the 'unit' value symbol and acts as a wildcard when used in place of a make$machine. Like the `default:` label in a `switch` statement, `_` catches anything that your make$machines don't. Unlike the `default:` label in a switch statement, a match$machine without a `_` will not be able to read unmatched data and may not terminate.
+**Match.\_** is the 'unit' value symbol and acts as a wildcard when used in place of a make$machine. Like the `default:` label in a `switch` statement, `_` catches anything that your make$machines don't. Unlike the `default:` label in a switch statement, a match$machine without a `_` will not be able to read unmatched data and may not terminate.
 
 ## Quick Start
 
