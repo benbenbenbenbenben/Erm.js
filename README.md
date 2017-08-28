@@ -2,6 +2,17 @@
 
 erm.js creates composable machines for pattern matching.
 
+```javascript
+let monkeyKeystrokes = infiniteTypewriters(infiniteMonkeys).readToEnd()
+
+match(...monkeyKeystroke)(
+  make(macbeth)(book => worksOfShakespeare.push(book)),
+  make(thetwogentlemenofverona)(book => worksOfShakespeare.push(book)),
+  make(ayorkshiretragedy)(book => haltAndCatchFire()),
+  _
+)
+```
+
 If like me you've got data, you've tried pattern matching with rxjs, you've tried finding arrays in arrays with the Knuth-Morris-Pratt algorithm, but it's all too much and not quite what you need, then maybe erm is the javascript pattern matching library you're looking for!
 
 _note: this project is (pre) alpha right now and discussed APIs are subject to change_
@@ -10,7 +21,7 @@ _note: this project is (pre) alpha right now and discussed APIs are subject to c
 
 erm.js will work with arrays of anything, including strings. 
 
-> __match__(_...input_)(__make__\[.__until__(_haltpredicate_)](_predicate_)(_output_, \[_error_])\[,...])
+> __match__(_...input_)(__make__\[.__until__(_haltpredicate|value_)](_predicate|value_)(_output_, \[_error_])\[,...])
 
 __match__ accepts _...input_ and returns a __match$machine__ - a callable object that accepts one or more make$machines
 
@@ -34,9 +45,11 @@ match(emailaddress)(
 )
 ```
 
-#### Predicates and Callbacks
+#### Predicates, Values and Callbacks
 
-_predicate_ and _haltpredicate_ are as you would expect, p => true|false
+_predicate_ and _haltpredicate_ are as you would expect, p => true|false.
+
+If a value _value_ is supplied to make it is automatically converted to _p => p == value_ i.e. `make(3.14) == make(p => p == 3.14)`
 
 _output_ is your supplied callback function that is invoked with a single object `{ value, signal, location: { start, length } }`
 
