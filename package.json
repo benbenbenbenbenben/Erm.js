@@ -1,6 +1,6 @@
 {
   "name": "erm-js",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "The Esoteric Reactive Machine",
   "main": "index.js",
   "scripts": {
