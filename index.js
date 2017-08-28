@@ -5,13 +5,47 @@ const _ = unit
 const _unitmachine = _ => true
 const TRACE = false
 const trace = (...args) => TRACE ? console.log(chalk.gray(...args)) : unit
+
+class Input {
+  constructor(contents) {
+    this.buffer = contents
+    this._position = 0
+  }
+  get position() {
+    return this._position
+  }
+  set position(value) {
+    this._position = value
+  }
+  static fromArray(array) {
+    let input = new Input(array)
+    return new Proxy({}, {
+      get: function(target, property, receiver) {
+        if (property === 'position')
+          return input[property]
+        return array[property].bind ? array[property].bind(array) : array[property]
+      },
+      set: function(target, property, value, receiver) {
+        if (property === 'position')
+          return input[property] = value
+        return array[property] = value
+      }
+    })
+  }
+}
+
 /**
  * Provides fluent pattern matching for iterable input data.
  */
 class Match {
-  constructor(...input) {
-    this.input = input
-    this.position = 0
+  constructor(inputmachine) {
+    this.input = inputmachine
+  }
+  get position() {
+    return this.input.position
+  }
+  set position(value) {
+    this.input.position = value
   }
   load(...machines) {
     // patch special machines
@@ -77,6 +111,11 @@ class Match {
   static get _() {
     return _
   }
+  static input(input) {
+    let inputmachine = Input.fromArray(input)
+
+    return inputmachine
+  }
   /**
    * Creates the match-machine for the provided input. The match-machine is a callable
    * object that accepts machines created by {@link Match.make}
@@ -109,7 +148,8 @@ class Match {
    * @returns {function} The match-machine, callable
    */
   static match(...input) {
-    let match = new Match(...input)
+    let inputmachine = Match.input(input)
+    let match = new Match(inputmachine)
     let machine = (function(...machines) {
       return match.load(...machines).runmatch()
     }).bind(match)
