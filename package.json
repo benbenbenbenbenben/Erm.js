@@ -1,6 +1,6 @@
 {
   "name": "erm-js",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "The Esoteric Reactive Machine",
   "main": "index.js",
   "scripts": {
@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/benbenbenbenbenben/erm.js.git"
+    "url": "git+ssh://git@gitlab.seance.io:ourben/erm.js.git"
   },
   "keywords": [
     "erm.js",
