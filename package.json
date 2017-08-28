@@ -36,6 +36,7 @@
   },
   "devDependencies": {
     "jsdoc": "^3.5.4",
-    "mocha": "^3.5.0"
+    "mocha": "^3.5.0",
+    "semantic-release-gitlab": "^4.0.17"
   }
 }

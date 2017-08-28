@@ -1,6 +1,6 @@
 # erm.js - The Esoteric Reducing Machine
 
-erm.js creates composable machines for pattern matching.
+erm.js creates composable machines for pattern matching. 
 
 ```javascript
 let monkeyKeystrokes =
