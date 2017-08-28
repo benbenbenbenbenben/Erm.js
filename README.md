@@ -8,7 +8,7 @@ let monkeyKeystrokes =
 
 match(...monkeyKeystrokes)(
   make(macbeth)(book => worksOfShakespeare.push(book)),
-  make(thetwogentlemenofverona)(book => worksOfShakespeare.push(book)),
+  make(twogentlemenofverona)(book => worksOfShakespeare.push(book)),
   make(ayorkshiretragedy)(book => haltAndCatchFire()),
   _
 )
