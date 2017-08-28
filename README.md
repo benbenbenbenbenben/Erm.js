@@ -3,7 +3,7 @@
 erm.js creates composable machines for pattern matching.
 
 ```javascript
-let monkeyKeystrokes = 
+let monkeyKeystrokes =
     infiniteTypewriters(infiniteMonkeys).readToEnd()
 
 match(...monkeyKeystrokes)(
@@ -20,7 +20,7 @@ _note: this project is (pre) alpha right now and discussed APIs are subject to c
 
 ## Introduction
 
-erm.js will work with arrays of anything, including strings. 
+erm.js will work with arrays of anything, including strings.
 
 > __match__(_...input_)(__make__\[.__until__(_haltpredicate|value_)](_predicate|value_)(_output_, \[_error_])\[,...])
 
@@ -36,7 +36,7 @@ A __make$machine__ will be activated with the same number of items as _predicate
 
 The __make$machine__ also exposes an optional __until__ method which causes the machine to run again until the _haltpredicate_ signals true. To illustrate this with an albeit contrived example, compare it to the Regex \[^] and * operator:
 ```javascript
-// regex 
+// regex
 let username = /[^@]*/.match(emailaddress)
 saveUsername(username)
 // erm with predicates
@@ -46,7 +46,7 @@ match(emailaddress)(
 )
 // erm with literals
 match(emailaddress)(
-  make(_).until(make('@'))(output => saveUsername(output)),
+  make(_).until('@')(output => saveUsername(output)),
   _
 )
 ```
@@ -76,7 +76,7 @@ __Match.not__ will invert a predicate while preserving arity e.g. `let TRUE = ma
 The Match class exposes the basic building blocks `{ match, make, not, _ }` for composing machines:
 
 ```javascript
-const { match, make, not, _  } = require('erm-js').Match 
+const { match, make, not, _  } = require('erm-js').Match
 
 match(..."my input data") (
   make((i, n) => i == "i" && n == "n")(_in => console.log(_in)),

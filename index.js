@@ -110,9 +110,11 @@ class Match {
    */
   static match(...input) {
     let match = new Match(...input)
-    return (function(...machines) {
+    let machine = (function(...machines) {
       return match.load(...machines).runmatch()
     }).bind(match)
+    machine.$machine = "match"
+    return machine
   }
   /**
    * Makes a predicate-machine from a predicate.
@@ -149,6 +151,10 @@ class Match {
 
     // terminator insert-operator
     terminator.until = function(stopmachine) {
+      // value to machine conversion
+      if (stopmachine.$machine === undefined) {
+        stopmachine = make(stopmachine)
+      }
       let untilterminator = (ok, fault = () => unit) => {
         let terminatingmachine = function() {
           trace(`until: ${stopmachine}`)
@@ -193,6 +199,7 @@ class Match {
     }
 
     terminator.toString = () => machine.toString()
+    terminator.$machine = "make"
 
     return terminator
   }

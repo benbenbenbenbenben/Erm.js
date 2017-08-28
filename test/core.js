@@ -15,6 +15,9 @@ describe('Match', () => {
     it('should accept many arguments', () => {
         assert(typeof(match({},{})) == 'function', "Match.match() was not a function")
     })
+    it('should have descriptor property $machine equal to "match"', () => {
+      assert.equal(match().$machine, "match")
+    })
   })
 
   it('should have member #make', () => assert(match))
@@ -32,6 +35,9 @@ describe('Match', () => {
     })
     it('should print the predicate when calling toString()', () => {
       assert.equal(make(p => p == p).toString(), 'p => p == p')
+    })
+    it('should have descriptor property $machine equal to "make"', () => {
+      assert.equal(make(p => p).$machine, "make")
     })
   })
 
