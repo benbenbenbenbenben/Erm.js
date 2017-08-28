@@ -3,9 +3,10 @@
 erm.js creates composable machines for pattern matching.
 
 ```javascript
-let monkeyKeystrokes = infiniteTypewriters(infiniteMonkeys).readToEnd()
+let monkeyKeystrokes = 
+    infiniteTypewriters(infiniteMonkeys).readToEnd()
 
-match(...monkeyKeystroke)(
+match(...monkeyKeystrokes)(
   make(macbeth)(book => worksOfShakespeare.push(book)),
   make(thetwogentlemenofverona)(book => worksOfShakespeare.push(book)),
   make(ayorkshiretragedy)(book => haltAndCatchFire()),
