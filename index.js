@@ -69,6 +69,11 @@ class Match {
   eof() {
     return this.position >= this.input.length
   }
+  static objectEqual(left, right) {
+    if (left == null)
+      return left == right
+    return undefined == Object.keys(left).find(key => typeof(left[key] == 'object') ? Match.objectEqual(left[key], right[key]) : left[key] != right[key])
+  }
   static get _() {
     return _
   }
@@ -116,8 +121,15 @@ class Match {
    */
   static make(machine) {
 
+    // value->predicate step
     if (machine == unit)
       machine = _unitmachine
+    if (typeof(machine) == 'string')
+      machine = eval(`p => p == '${machine}'`)
+    if (typeof(machine) == 'number' || typeof(machine) == 'boolean')
+      machine = eval(`p => p == ${machine}`)
+    if (typeof(machine) == 'object')
+      machine = eval(`p => Match.objectEqual(p, ${JSON.stringify(machine)})`)
 
     let terminator = function (ok, fault = () => unit) {
       let terminatingmachine = function () {
@@ -150,8 +162,7 @@ class Match {
             return outcome != unit
           }
 
-var k = 50
-          while (k--) {
+          while (true) {
             //console.log("machine loop", this.position)
             let result = untillingmachine.bind(this)()
             if (result) {
