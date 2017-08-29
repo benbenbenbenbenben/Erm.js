@@ -2,7 +2,7 @@ var assert = require('assert')
 
 describe('Match', () => {
 
-  let { match, make, not } = require('../').Match
+  let { match, make, not, _ } = require('../').Match
 
   it('should have member #match', () => assert(match))
   describe('#match()', () => {
@@ -38,6 +38,18 @@ describe('Match', () => {
     })
     it('should have descriptor property $machine equal to "make"', () => {
       assert.equal(make(p => p).$machine, "make")
+    })
+    it('should have member #until', () => {
+      assert(make(_).until)
+    })
+    it('should have member #until#break', () => {
+      assert(make(_).until(_).break)
+    })
+    it('should have member #break', () => {
+      assert(make(_).break)
+    })
+    it('should have member ()#break', () => {
+      assert(make(_)(() => true).break)
     })
   })
 

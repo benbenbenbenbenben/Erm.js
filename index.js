@@ -5,6 +5,7 @@ const _ = unit
 const _unitmachine = _ => true
 const TRACE = false
 const trace = (...args) => TRACE ? console.log(chalk.gray(...args)) : unit
+const bond = (f, ...affixes) => affixes.reduce((f, a, i) => f[a.name||i] = a, f)
 
 class Input {
   constructor(contents) {
@@ -40,12 +41,16 @@ class Input {
 class Match {
   constructor(inputmachine) {
     this.input = inputmachine
+    this.breakset = false
   }
   get position() {
     return this.input.position
   }
   set position(value) {
     this.input.position = value
+  }
+  break() {
+    this.breakset = true
   }
   load(...machines) {
     // patch special machines
@@ -76,7 +81,7 @@ class Match {
           if (positionin == positionout) {
             throw new Error(`no pattern from ${this.position} to ${this.input.length}, ensure there are machines for expected input or use _`)
           }
-        } while(++cycle)
+        } while(++cycle && !this.breakset)
       }).bind(this)
     }
     return matcher
@@ -85,11 +90,15 @@ class Match {
     let _input = this.collect(this.input, machine.length)
     trace(`\t\t${_input}`)
     let start = this.position
-    let pass = machine(..._input)
+    let pass = machine.bind(this)(..._input)
     let location = { start: start, length: _input.length }
     if (pass) {
       this.advance(machine.length)
-      return { value: _input, signal: pass, location }
+      let result = { value: _input, signal: pass, location }
+      if (machine.suffixes) {
+        machine.suffixes.forEach(suffix => suffix.bind(this)(result))
+      }
+      return result
     } else {
       return unit
     }
@@ -187,6 +196,7 @@ class Match {
 
     let terminator = function (ok, fault = () => unit) {
       let terminatingmachine = function () {
+        // make$machine terminated
         try {
           let outcome = this.runmachine(machine)
           if (outcome != unit)
@@ -197,15 +207,23 @@ class Match {
           throw e
         }
       }
+
+      terminatingmachine.break = () => {
+        if (machine.suffixes === undefined)
+          machine.suffixes = []
+        machine.suffixes.push(function(){ this.break() })
+        return terminatingmachine
+      }
       terminatingmachine.machine = machine
       return /* latebound */ terminatingmachine
     }
+    // compose "if break() called suffix break activity to machine()"
 
     // terminator insert-operator
-    terminator.until = function(stopmachine) {
+    let until = function(stopmachine) {
       // value to machine conversion
       if (stopmachine.$machine === undefined) {
-        stopmachine = make(stopmachine)
+        stopmachine = Match.make(stopmachine)
       }
       let untilterminator = (ok, fault = () => unit) => {
         let terminatingmachine = function() {
@@ -221,16 +239,12 @@ class Match {
           }
 
           while (true) {
-            //console.log("machine loop", this.position)
             let result = untillingmachine.bind(this)()
             if (result) {
-            //  console.log("passed until")
               let stop = stoppingmachine.bind(this)()
-            //  console.log(result, stop)
               if (stop) {
                 if (outcomes.length > 0) {
                   ok(outcomes)
-                  //console.log("stopping machine completed", outcomes)
                 }
                 break
               }
@@ -247,9 +261,36 @@ class Match {
         terminatingmachine.machine = stopmachine
         return /* latebound */ terminatingmachine
       }
+      // TODO: this is duplicated above
+      untilterminator.break = () => {
+        if (machine.suffixes === undefined)
+          machine.suffixes = []
+        machine.suffixes.push(function(){ this.break() })
+        return untilterminator
+      }
       return untilterminator
     }
 
+    bond(terminator, until)
+    // TODO: this is duplicated above
+    terminator.break = () => {
+      if (machine.suffixes === undefined)
+        machine.suffixes = []
+      machine.suffixes.push(function(){ this.break() })
+      let terminatormachine = function(){
+        try {
+          let outcome = this.runmachine(machine)
+          //if (outcome != unit)
+          //  ok(outcome)
+          return outcome != unit
+        } catch(e) {
+          //fault(e)
+          throw e
+        }
+      }
+      terminatormachine.machine = machine
+      return terminatormachine
+    }
     terminator.toString = () => machine.toString()
     terminator.$machine = "make"
 

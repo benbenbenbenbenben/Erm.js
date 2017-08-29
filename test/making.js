@@ -29,4 +29,5 @@ describe("Make(<type>) acts as Make(<predicate:type=>true|false>)", () => {
     let strip = s => s.toString().replace(/["' ]/g, "") /* note: breaks string literals */
     assert.equal(strip(object), strip(p => Match.objectEqual(p, { foo: 1, bar: 2 })))
   })
+
 })
