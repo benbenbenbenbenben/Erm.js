@@ -1,6 +1,6 @@
 # erm.js - The Esoteric Reducing Machine
 
-erm.js creates composable machines for pattern matching. 
+erm.js creates composable machines for pattern matching.
 
 ```javascript
 let monkeyKeystrokes =
@@ -32,15 +32,15 @@ erm.js will work with arrays of anything, including strings.
 
 ### The static Match API
 
-> __match__(_...input_)(__make__(_predicate|value_)\[.__until__(_haltpredicate|value_)](_output_, \[_error_])\[,...])
+> __match__(_...input_)(__make__(_...predicate|value_)\[.__until__(_haltpredicate|value_)](_output_, \[_error_])\[,...])
 
 __match__ accepts _...input_ and returns a __match$machine__ - a callable object that accepts one or more make$machines
 
-__make__ accepts _predicate_ and return a __make$machine__- a callable object that accepts an _output_ callback and optionally and _error_ callback.
+__make__ accepts _predicate|value|...value_ and return a __make$machine__- a callable object that accepts an _output_ callback and optionally and _error_ callback.
 
 #### Fixed Size Patterns
 
-A __make$machine__ will be activated with the same number of items as _predicate_ has parameters; which is to say they have the same arity; so a predicate `p => ...` will produce a machine that activate with 1 parameter, in this instance `p`. Because of this, predicates with a `...rest` parameter are not currently compatible. Variable length patterns can still be matched using __make$machine.until__
+A __make$machine__ will be activated with the same number of items as _predicate_ has parameters *-or-* the same number of _...values_ provided; which is to say the _make$machine_ has the same arity; so a predicate `p => ...` will produce a machine that activates with 1 parameter, in this instance `p`; and the values `...['4', '2']` will produce a machine that activates with 2 parameters. `4` and `2`. Because of this, predicates with a `...rest` parameter are not compatible-. Variable length patterns can be matched using __make$machine.until__ - _à la Kleene star..._
 
 #### Variable Size Patterns
 
