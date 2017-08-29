@@ -161,17 +161,29 @@ class Match {
    * @param {predicate} machine - A predicate; p => true|false
    * @returns {function} The predicate-machine, callable
    */
-  static make(machine) {
+  static make(predicatevalue, ...rest) {
+    rest.unshift(predicatevalue)
 
-    // value->predicate step
-    if (machine == unit)
-      machine = _unitmachine
-    if (typeof(machine) == 'string')
-      machine = eval(`p => p == '${machine}'`)
-    if (typeof(machine) == 'number' || typeof(machine) == 'boolean')
-      machine = eval(`p => p == ${machine}`)
-    if (typeof(machine) == 'object')
-      machine = eval(`p => Match.objectEqual(p, ${JSON.stringify(machine)})`)
+    // rationalise
+    rest.forEach((pv, i) => {
+      // value->predicate step
+      if (pv == unit)
+        rest[i] = _unitmachine
+      if (typeof(pv) == 'string')
+        rest[i] = eval(`p => p == '${pv}'`)
+      if (typeof(pv) == 'number' || typeof(pv) == 'boolean')
+        rest[i] = eval(`p => p == ${pv}`)
+      if (typeof(pv) == 'object')
+        rest[i] = eval(`p => Match.objectEqual(p, ${JSON.stringify(pv)})`)
+
+      Object.defineProperty(rest[i], 'initialvalue', { value: pv.toString() })
+    })
+
+    // concatenate to multivariate step
+    let machine = rest.length == 1 ? rest[0] : Object.defineProperty(
+      rest.reduce((f,p,i) => (...x) => f(...x) && p(x[i]), () => true),
+      'toString', { value: () => `(${rest.map((p, i) => `p${i}`).join(', ')}) => ${rest.map((p, i) => `p${i} == '${p.initialvalue}'`).join(' && ')}` }
+    )
 
     let terminator = function (ok, fault = () => unit) {
       let terminatingmachine = function () {
