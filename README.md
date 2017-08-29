@@ -32,11 +32,11 @@ erm.js will work with arrays of anything, including strings.
 
 ### The static Match API
 
-> __match__(_...input_)(__make__(_...predicate|value_)\[.__until__(_haltpredicate|value_)](_output_, \[_error_])\[,...])
+> __match__(_...input_)(__make__(_...predicate:unary|...value_)\[.__until__(_haltpredicate:unary|value_)](_output_, \[_error_])\[,...])
 
 __match__ accepts _...input_ and returns a __match$machine__ - a callable object that accepts one or more make$machines
 
-__make__ accepts _predicate|value|...value_ and return a __make$machine__- a callable object that accepts an _output_ callback and optionally and _error_ callback.
+__make__ accepts _...predicate|...value_ and return a __make$machine__- a callable object that accepts an _output_ callback and optionally and _error_ callback.
 
 #### Fixed Size Patterns
 
