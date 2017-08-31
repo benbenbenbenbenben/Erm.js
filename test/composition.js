@@ -1,7 +1,7 @@
 const assert = require('assert')
 const { match, make, not, _ } = require('../').Match
 
-describe('scenario: match(..."xxxy") can break()', () => {
+describe('scenario: match(..."xxxyz") can break()', () => {
   it(`should match ...'xxxyz' once for x and break`, () => {
     let count = 0
     match(..."xxxyz")(
@@ -27,5 +27,25 @@ describe('scenario: match(..."xxxy") can break()', () => {
       _
     )
     assert.equal(count, 0)
+  })
+})
+
+describe('scenario: match(..."xxxyzxxxxxyz") can until()', () => {
+  it(`should make('x').until('x') as 'xxx'`, () => {
+    let found = ""
+    match(..."xxxyz")(
+      make('x').until('y')(result => found = result.map(x=>x.value[0]).join("")),
+      _
+    )
+    assert.equal(found, "xxx")
+  })
+
+  it(`should make('x').until('x') as ['xxx','xxxxx']`, () => {
+    let found = []
+    match(..."xxxyzxxxxxyz")(
+      make('x').until('y')(result => found.push(result.map(x=>x.value[0]).join(""))),
+      _
+    )
+    assert.equal(JSON.stringify(found), JSON.stringify(["xxx", "xxxxx"]))
   })
 })

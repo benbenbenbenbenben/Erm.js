@@ -24,12 +24,18 @@ class Input {
       get: function(target, property, receiver) {
         if (property === 'position')
           return input[property]
-        return array[property].bind ? array[property].bind(array) : array[property]
+        try {
+          return array[property].bind ? array[property].bind(array) : array[property]
+        } catch(e) {
+          throw `${e}, property = ${property.toString()}`
+        }
       },
       set: function(target, property, value, receiver) {
         if (property === 'position')
-          return input[property] = value
-        return array[property] = value
+          input[property] = value
+        else
+          array[property] = value
+        return true
       }
     })
   }
@@ -108,6 +114,9 @@ class Match {
   }
   advance(offset) {
     this.position += offset
+  }
+  rewindto(position) {
+    this.position = position
   }
   eof() {
     return this.position >= this.input.length
@@ -225,35 +234,44 @@ class Match {
       if (stopmachine.$machine === undefined) {
         stopmachine = Match.make(stopmachine)
       }
-      let untilterminator = (ok, fault = () => unit) => {
+      let terminator$until = (ok, fault = () => unit) => {
         let terminatingmachine = function() {
           trace(`until: ${stopmachine}`)
           let outcomes = []
-          let okredirect = outcome => outcomes.push(outcome)
+          let okredirect = outcome => {
+            outcomes.push(outcome)
+          }
           let untillingmachine = terminator(okredirect, fault)
           let stoppingmachine = function () {
-            let outcome = this.runmachine(stopmachine)
-            if (outcome != unit)
-              outcomes.push(outcome)
+            let inpos = this.position
+            let outcome = this.runmachine(stopmachine(() => {}))
+            this.rewindto(inpos)
             return outcome != unit
           }
 
           while (true) {
-            let result = untillingmachine.bind(this)()
-            if (result) {
+            let start = this.position
+            let need = untillingmachine.bind(this)()
+              console.log("loop", start, this.position)
+            if (start + untillingmachine.machine.length < this.position) {
+              if (outcomes.length > 0)
+                ok(outcomes)
+              break
+            }
+            if (need) {
               let stop = stoppingmachine.bind(this)()
               if (stop) {
                 if (outcomes.length > 0) {
                   ok(outcomes)
+                  break
                 }
-                break
               }
             } else {
               if (stoppingmachine.bind(this)()) {
                 break
               }
             }
-            if (this.eof()) {
+            if (this.eof() || this.position == start) {
               break
             }
           }
@@ -262,13 +280,13 @@ class Match {
         return /* latebound */ terminatingmachine
       }
       // TODO: this is duplicated above
-      untilterminator.break = () => {
+      terminator$until.break = () => {
         if (machine.suffixes === undefined)
           machine.suffixes = []
         machine.suffixes.push(function(){ this.break() })
-        return untilterminator
+        return terminator$until
       }
-      return untilterminator
+      return terminator$until
     }
 
     bond(terminator, until)
@@ -301,6 +319,8 @@ class Match {
     return arrow
   }
   static not(machine) {
+    if (machine.$machine === undefined)
+      machine = Match.make(machine)
     let notmachine = Match.arrowwitharity((...args) => !machine(...args), machine.length)
     Object.defineProperty(notmachine, 'name', { value: `!${machine.name}` })
     notmachine.toString = () => `not(${machine.toString()})`

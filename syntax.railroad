@@ -1,0 +1,34 @@
+Diagram(
+Stack(
+Sequence(
+  Terminal("match"),
+  Terminal("("),
+  NonTerminal("ƒi"),
+  Terminal(")"),
+  Terminal("("),
+),
+Sequence(
+  OneOrMore(
+    Sequence(
+      Terminal("make"),      
+      Terminal("("),
+      NonTerminal("ƒp"),
+      Terminal(")"),
+
+      Choice(0, Skip(),
+        Sequence(".", "until", "(", NonTerminal("ƒu"), ")", Choice(0, Skip(), Sequence("break", "(", ")"))),
+        Sequence(".", "break", "(", ")")
+      ),
+
+
+      Terminal("("),
+      NonTerminal("ƒo", ","),
+      Choice(0, Skip(), Sequence(Terminal(","), NonTerminal("ƒe"))),
+      Terminal(")")
+    ),
+    Terminal(",")
+  )
+),
+  Terminal(")")
+)
+)
