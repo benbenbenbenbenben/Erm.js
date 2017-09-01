@@ -27,7 +27,7 @@ class Input {
         try {
           return array[property].bind ? array[property].bind(array) : array[property]
         } catch(e) {
-          throw `${e}, property = ${property.toString()}`
+          throw e;//`${e}, property = ${property.toString()}`
         }
       },
       set: function(target, property, value, receiver) {
@@ -93,14 +93,49 @@ class Match {
     return matcher
   }
   runmachine(machine) {
-    let _input = this.collect(this.input, machine.length)
-    trace(`\t\t${_input}`)
-    let start = this.position
-    let pass = machine.bind(this)(..._input)
-    let location = { start: start, length: _input.length }
+    let read = (targetmachine) => {
+      if (this.eof()) {
+        throw "is eof"
+      }
+      let _input = this.collect(this.input, targetmachine.length)
+      trace(`\t\t${_input}`)
+      let start = this.position
+      let pass = targetmachine.bind(this)(..._input)
+      let location = { start: start, length: targetmachine.length }
+      return { _input, pass, location }
+    }
+    let { _input:value, pass, location } = read(machine)
     if (pass) {
+      let rewindpoint = location.start
       this.advance(machine.length)
-      let result = { value: _input, signal: pass, location }
+      if (machine.repeater) {
+        this.advance(-machine.length)
+        value = []
+        while (true) {
+          let next = read(machine)
+          this.advance(machine.length)
+          let stop = read(machine.repeater)
+          this.advance(-machine.length)
+          if (next.pass && stop.pass) {
+            // done - matches
+            this.advance(machine.length); location.length += machine.length
+            value.push(...next._input)
+            break
+          }
+          if (next.pass && !stop.pass) {
+            // append
+            this.advance(machine.length); location.length += machine.length
+            value.push(...next._input)
+            continue
+          }
+          if (!next.pass) {
+            // done - can't pass
+            this.rewindto(rewindpoint)
+            return unit
+          }
+        }
+      }
+      let result = { value, signal: pass, location }
       if (machine.suffixes) {
         machine.suffixes.forEach(suffix => suffix.bind(this)(result))
       }
@@ -220,7 +255,9 @@ class Match {
       terminatingmachine.break = () => {
         if (machine.suffixes === undefined)
           machine.suffixes = []
-        machine.suffixes.push(function(){ this.break() })
+        machine.suffixes.push(function(){
+          this.break()
+         })
         return terminatingmachine
       }
       terminatingmachine.machine = machine
@@ -228,68 +265,25 @@ class Match {
     }
     // compose "if break() called suffix break activity to machine()"
 
-    // terminator insert-operator
-    let until = function(stopmachine) {
-      // value to machine conversion
-      if (stopmachine.$machine === undefined) {
-        stopmachine = Match.make(stopmachine)
+    // terminator#until
+    let until = function(umachine) {
+      let until$terminator = function(ok, fault = () => unit) {
+          machine.repeater = umachine
+          return terminator(ok, fault)
       }
-      let terminator$until = (ok, fault = () => unit) => {
-        let terminatingmachine = function() {
-          trace(`until: ${stopmachine}`)
-          let outcomes = []
-          let okredirect = outcome => {
-            outcomes.push(outcome)
-          }
-          let untillingmachine = terminator(okredirect, fault)
-          let stoppingmachine = function () {
-            let inpos = this.position
-            let outcome = this.runmachine(stopmachine(() => {}))
-            this.rewindto(inpos)
-            return outcome != unit
-          }
-
-          while (true) {
-            let start = this.position
-            let need = untillingmachine.bind(this)()
-              console.log("loop", start, this.position)
-            if (start + untillingmachine.machine.length < this.position) {
-              if (outcomes.length > 0)
-                ok(outcomes)
-              break
-            }
-            if (need) {
-              let stop = stoppingmachine.bind(this)()
-              if (stop) {
-                if (outcomes.length > 0) {
-                  ok(outcomes)
-                  break
-                }
-              }
-            } else {
-              if (stoppingmachine.bind(this)()) {
-                break
-              }
-            }
-            if (this.eof() || this.position == start) {
-              break
-            }
-          }
-        }
-        terminatingmachine.machine = stopmachine
-        return /* latebound */ terminatingmachine
-      }
-      // TODO: this is duplicated above
-      terminator$until.break = () => {
+      until$terminator.break = () => until$terminator;
+      /*() => {
         if (machine.suffixes === undefined)
           machine.suffixes = []
-        machine.suffixes.push(function(){ this.break() })
-        return terminator$until
-      }
-      return terminator$until
+        machine.suffixes.push(function(){
+          this.break()
+         })
+      }*/
+      return until$terminator
     }
+    terminator.until = until
 
-    bond(terminator, until)
+
     // TODO: this is duplicated above
     terminator.break = () => {
       if (machine.suffixes === undefined)
@@ -319,8 +313,8 @@ class Match {
     return arrow
   }
   static not(machine) {
-    if (machine.$machine === undefined)
-      machine = Match.make(machine)
+    //if (machine.$machine === undefined)
+    //  machine = Match.make(machine)
     let notmachine = Match.arrowwitharity((...args) => !machine(...args), machine.length)
     Object.defineProperty(notmachine, 'name', { value: `!${machine.name}` })
     notmachine.toString = () => `not(${machine.toString()})`

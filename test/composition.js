@@ -34,7 +34,7 @@ describe('scenario: match(..."xxxyzxxxxxyz") can until()', () => {
   it(`should make('x').until('x') as 'xxx'`, () => {
     let found = ""
     match(..."xxxyz")(
-      make('x').until('y')(result => found = result.map(x=>x.value[0]).join("")),
+      make('x').until(p => p == 'y')(result => found = result.value.map(x=>x).join("")),
       _
     )
     assert.equal(found, "xxx")
@@ -43,7 +43,7 @@ describe('scenario: match(..."xxxyzxxxxxyz") can until()', () => {
   it(`should make('x').until('x') as ['xxx','xxxxx']`, () => {
     let found = []
     match(..."xxxyzxxxxxyz")(
-      make('x').until('y')(result => found.push(result.map(x=>x.value[0]).join(""))),
+      make('x').until(p => p == 'y')(result => found.push(result.value.map(x=>x).join(""))),
       _
     )
     assert.equal(JSON.stringify(found), JSON.stringify(["xxx", "xxxxx"]))

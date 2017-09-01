@@ -17,17 +17,32 @@ match(...dumbpasswords)(
   _
 )
 
-// a take function
-let takewhile = (...input) => {
-  return (predicate) => {
-    let result = []
-    let count = 4
-    match(...input)(
-      make(predicate).until(() => count-- > 0)(items => result.push(...items.map(i => i.value))),
-      _
-    )
-    console.log(result)
-    return result
-  }
+// a take-while function
+let takewhile = input => predicate => {
+  let items = []
+  match(...input)(
+    make(predicate).until(p => !predicate(p))(result => items.push(...result.value)).break(),
+    _
+  )
+  return items
 }
-takewhile(...dumbpasswords)(password => password.length < 8)
+
+let taken = takewhile(dumbpasswords)(p => p != "111111")
+console.log("take while !111111")
+console.log(taken)
+
+// a partition by function
+let partition = input => predicate => {
+  let left = []
+  let right = []
+  match(...input)(
+    make(predicate)(q => left.push(q.value)),
+    make(p => !predicate(p))(q => right.push(q.value)),
+    _
+  )
+  return [left, right]
+}
+
+let [pleft, pright] = partition(dumbpasswords)(p => p.match(/^\d*$/))
+console.log("partitioned, numbers only, not numbers only")
+console.log({ pleft, pright })
