@@ -46,3 +46,27 @@ let partition = input => predicate => {
 let [pleft, pright] = partition(dumbpasswords)(p => p.match(/^\d*$/))
 console.log("partitioned, numbers only, not numbers only")
 console.log({ pleft, pright })
+
+// direct to array demonstration
+let numbers = []
+match(...dumbpasswords)(
+  make(p => p.match(/^\d*$/)).push(numbers),
+  _
+)
+console.log("filtered direct to array reference")
+console.log(numbers)
+
+// stream to function
+console.log("stream to function")
+let stream = function(...args) {
+  console.log(...args)
+}
+match(...dumbpasswords)(
+  make(p => p.match(/^\d*$/)).stream(stream),
+  _
+)
+
+// yield to caller
+let output = match(...dumbpasswords)(make(_).yield())
+console.log("yield to caller")
+console.log(output)

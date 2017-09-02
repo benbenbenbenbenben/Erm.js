@@ -1,5 +1,5 @@
 Diagram(
-Stack(
+Sequence(
 Sequence(
   Terminal("match"),
   Terminal("("),
@@ -10,21 +10,37 @@ Sequence(
 Sequence(
   OneOrMore(
     Sequence(
-      Terminal("make"),      
+      Terminal("make"),
       Terminal("("),
       NonTerminal("ƒp"),
       Terminal(")"),
 
       Choice(0, Skip(),
-        Sequence(".", "until", "(", NonTerminal("ƒu"), ")", Choice(0, Skip(), Sequence("break", "(", ")"))),
-        Sequence(".", "break", "(", ")")
+        Sequence(".", "until", "(", NonTerminal("ƒu"), ")", Choice(0, Skip()))
       ),
 
+      Choice(0, Skip(), Sequence(".",
+        Choice(1,
+          Sequence("push", "(", NonTerminal("[]ref"), ")"),
+          Sequence("stream", "(", NonTerminal("ƒs"), ")"),
+          Sequence("yield", "(", Optional(NonTerminal("name")), ")")
+        ))
+      ),
 
+      Optional(
+Sequence(
       Terminal("("),
-      NonTerminal("ƒo", ","),
+      NonTerminal("ƒo|Match", ","),
       Choice(0, Skip(), Sequence(Terminal(","), NonTerminal("ƒe"))),
       Terminal(")")
+)
+      )
+,
+
+
+
+
+      Choice(0, Skip(), Sequence("break", "(", ")"))
     ),
     Terminal(",")
   )

@@ -48,12 +48,16 @@ class Match {
   constructor(inputmachine) {
     this.input = inputmachine
     this.breakset = false
+    this._output = []
   }
   get position() {
     return this.input.position
   }
   set position(value) {
     this.input.position = value
+  }
+  get output() {
+    return this._output
   }
   break() {
     this.breakset = true
@@ -67,7 +71,7 @@ class Match {
     // TODO: bind machines
     //let machinesbound = machines.map(machine => machine.bind(this))
     let matcher = {
-      runmatch: (function() {
+      runmatch: function() {
         trace('machines: ', machines)
         let cycle = 0
         do {
@@ -88,7 +92,8 @@ class Match {
             throw new Error(`no pattern from ${this.position} to ${this.input.length}, ensure there are machines for expected input or use _`)
           }
         } while(++cycle && !this.breakset)
-      }).bind(this)
+        return this.output
+      }
     }
     return matcher
   }
@@ -204,7 +209,7 @@ class Match {
     let inputmachine = Match.input(input)
     let match = new Match(inputmachine)
     let machine = (function(...machines) {
-      return match.load(...machines).runmatch()
+      return match.load(...machines).runmatch.bind(match)()
     }).bind(match)
     machine.$machine = "match"
     return machine
@@ -244,7 +249,7 @@ class Match {
         try {
           let outcome = this.runmachine(machine)
           if (outcome != unit)
-            ok(outcome)
+            ok.bind(this)(outcome)
           return outcome != unit
         } catch(e) {
           fault(e)
@@ -252,6 +257,7 @@ class Match {
         }
       }
 
+      // suffixes
       terminatingmachine.break = () => {
         if (machine.suffixes === undefined)
           machine.suffixes = []
@@ -261,9 +267,43 @@ class Match {
         return terminatingmachine
       }
       terminatingmachine.machine = machine
+
       return /* latebound */ terminatingmachine
     }
     // compose "if break() called suffix break activity to machine()"
+
+    terminator.stream = function(func) {
+      let terminated = terminator(function(result) {
+        func.bind(this)(...result.value)
+      })
+      return terminated
+    }
+
+    terminator.push = function(array) {
+      return terminator.stream(function(...values) {
+        array.push(...values)
+      })
+    }
+
+    terminator.yield = function() {
+      return terminator.stream(function(...values) {
+        //debugger
+        this.output.push(...values)
+      })
+    }
+
+    terminator.machine = machine
+
+/*      console.log("push suffix", array, machine.suffixes)
+      if (machine.suffixes === undefined)
+        machine.suffixes = []
+      machine.suffixes.push(function(){
+        console.log("run push", result)
+        array.push(result)
+      })
+      console.log(terminator)
+      return terminator
+    }*/
 
     // terminator#until
     let until = function(umachine) {
