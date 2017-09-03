@@ -1,15 +1,34 @@
 # erm.js - The Esoteric Reducing Machine
 
+### Now 0.1.0 ALPHA!
+
 erm.js creates composable machines for pattern matching.
 
 ```javascript
 let monkeyKeystrokes =
     infiniteTypewriters(infiniteMonkeys).readToEnd()
 
+// raw (data + location) with closures
 match(...monkeyKeystrokes)(
   make(macbeth)(book => worksOfShakespeare.push(book)),
   make(twogentlemenofverona)(book => worksOfShakespeare.push(book)),
-  make(ayorkshiretragedy)(book => haltAndCatchFire()),
+  make(ayorkshiretragedy)(haltAndCatchFire),
+  _
+)
+
+// values with closures
+match(...monkeyKeystrokes)(
+  make(macbeth).stream(book => worksOfShakespeare.push(book)),
+  make(twogentlemenofverona).stream(book => worksOfShakespeare.push(book)),
+  make(ayorkshiretragedy)(haltAndCatchFire),
+  _
+)
+
+// values to arrays
+match(...monkeyKeystrokes)(
+  make(macbeth).push(worksOfShakespeare),
+  make(twogentlemenofverona).push(worksOfShakespeare),
+  make(ayorkshiretragedy)(haltAndCatchFire),
   _
 )
 ```
@@ -129,4 +148,32 @@ match(...'hello world')(
   make(l).until(not(o))(x => console.log('ll found:', x)),
   _
 )
+
+// implementing a take-while function
+let takewhile = input => predicate => {
+  let items = []
+  match(...input)(
+    make(predicate).until(p => !predicate(p))(result => items.push(...result.value)).break(),
+    _
+  )
+  return items
+}
+
+// and using it
+let taken = takewhile(dumbpasswords)(p => p != "111111")
+
+// implementing a partition by function
+let partition = input => predicate => {
+  let left = []
+  let right = []
+  match(...input)(
+    make(predicate)(q => left.push(q.value)),
+    make(p => !predicate(p))(q => right.push(q.value)),
+    _
+  )
+  return [left, right]
+}
+
+// and using it
+let [lefthandside, righthandside] = partition(dumbpasswords)(p => p.match(/^\d*$/))
 ```
