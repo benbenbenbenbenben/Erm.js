@@ -7,6 +7,16 @@ const TRACE = false
 const trace = (...args) => TRACE ? console.log(chalk.gray(...args)) : unit
 const bond = (f, ...affixes) => affixes.reduce((f, a, i) => f[a.name||i] = a, f)
 
+class ExtensibleFunction extends Function {
+  constructor(f) {
+    return Object.setPrototypeOf(f, new.target.prototype);
+  }
+}
+
+class Make extends ExtensibleFunction {
+
+}
+
 class Input {
   constructor(contents) {
     this.buffer = contents
@@ -161,6 +171,10 @@ class Match {
   eof() {
     return this.position >= this.input.length
   }
+  static before(predicate) {
+    let machine = new Make(predicate)
+    return machine
+  }
   static objectEqual(left, right) {
     if (left == null)
       return left == right
@@ -220,28 +234,35 @@ class Match {
    * @returns {function} The predicate-machine, callable
    */
   static make(predicatevalue, ...rest) {
+    let made = []
     rest.unshift(predicatevalue)
 
-    // rationalise
-    rest.forEach((pv, i) => {
-      // value->predicate step
-      if (pv == unit)
-        rest[i] = _unitmachine
-      if (typeof(pv) == 'string')
-        rest[i] = eval(`p => p == '${pv}'`)
-      if (typeof(pv) == 'number' || typeof(pv) == 'boolean')
-        rest[i] = eval(`p => p == ${pv}`)
-      if (typeof(pv) == 'object')
-        rest[i] = eval(`p => Match.objectEqual(p, ${JSON.stringify(pv)})`)
-
-      Object.defineProperty(rest[i], 'initialvalue', { value: pv.toString() })
-    })
-
     // concatenate to multivariate step
-    let machine = rest.length == 1 ? rest[0] : Object.defineProperty(
-      rest.reduce((f,p,i) => (...x) => f(...x) && p(x[i]), () => true),
-      'toString', { value: () => `(${rest.map((p, i) => `p${i}`).join(', ')}) => ${rest.map((p, i) => `p${i} == '${p.initialvalue}'`).join(' && ')}` }
-    )
+    if (rest.filter(r => !(r instanceof Make)).length > 1) {
+      made = rest.filter(r => r instanceof Make)
+      let unmade = rest.filter(r => !(r instanceof Make))
+      let ivs = unmade.map(u => u.toString())
+      let predicate = Object.defineProperty(
+        unmade.reduce((f,p,i) => (...x) => f(...x) && p(x[i]), () => true),
+        'toString', { value: () => `(${unmade.map((p, i) => `p${i}`).join(', ')}) => ${unmade.map((p, i) => `p${i} == '${ivs[i]}'`).join(' && ')}` }
+      )
+    console.log(predicate.toString(), rest)
+      rest = [predicate]
+    }
+
+    let machine = rest[0]
+
+    // rationalise
+    // value->predicate step
+    if (machine == unit)
+      machine = new Make(_unitmachine)
+    if (typeof(machine) == 'string')
+      machine = new Make(eval(`p => p == '${machine}'`))
+    if (typeof(machine) == 'number' || typeof(machine) == 'boolean')
+      machine = new Make(eval(`p => p == ${machine}`))
+    if (typeof(machine) == 'object')
+      machine = new Make(eval(`p => Match.objectEqual(p, ${JSON.stringify(machine)})`))
+
 
     let terminator = function (ok, fault = () => unit) {
       let terminatingmachine = function () {
@@ -365,41 +386,3 @@ class Match {
 module.exports = {
   Match
 }
-
-/*
-let { match, make, not } = Match
-
-let a = p => p == 'a'
-let b = p => p == 'b'
-let z = p => p == 'z'
-let zz = (p, q) => z(p) && z(q)
-let zzz = (p, q, qq) => z(p) && zz(q, qq)
-let t = p => p == 't'
-
-match(...'t') (
-//  make(a)(result => console.log('a:', result)),
-//  make(b)(result => console.log('b:', result)),
-//  make(zzz)(result => console.log('zzz:', result)),
-  make(t).until(not(t))(result => console.log('t...t:', result)),
-  make(_)(result => console.log('_'))
-)
-
-let move = (p, q) => p.offsetX != q.offsetX || p.offsetY != q.offsetY
-let leftdown = p => p.type == "mousedown" && p.which == 1
-let leftup = p => p.type == "mouseup" && p.which == 1
-
-let keydown = p => p.type == "keydown"
-let keyup = p => p.type == "keyup"
-
-
-let leftclick = (p, q) => leftdown(p) && leftdown(q) && !move(p, q)
-let doubleclick = (p, q, pp, qq) => leftclick(p, q) && leftclick(pp, qq) && !move(p, pp)
-
-let keystroke = (p, q) => keydown(p) && keyup(q)
-
-match(...input.steps) (
-  make(leftclick)(result => console.log("leftclick")),
-  make(doubleclick)(result => console.log("doubleclick")),
-  make(keystroke).until(not(keystroke))(result => log("keystroke(s)"))
-)
-*/
