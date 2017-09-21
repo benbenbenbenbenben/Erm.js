@@ -36,7 +36,7 @@ let partition = input => predicate => {
   let left = []
   let right = []
   match(...input)(
-    make(predicate)(q => left.push(q.value)),
+    make(p => predicate(p))(q => left.push(q.value)),
     make(p => !predicate(p))(q => right.push(q.value)),
     _
   )

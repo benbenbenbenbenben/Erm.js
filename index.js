@@ -7,14 +7,68 @@ const TRACE = false
 const trace = (...args) => TRACE ? console.log(chalk.gray(...args)) : unit
 const bond = (f, ...affixes) => affixes.reduce((f, a, i) => f[a.name||i] = a, f)
 
+// get a function's parameters as [...string]
+(function() {
+  if (Function.prototype.parameters)
+    return;
+  Object.defineProperty(Function.prototype, "parameters", { get: function() {
+    var pattern = /^(?:(?:(?:function\s+[\w_\$][\w\d_\$]*)|function\s*|[\w_\$][\w\d_\$]*)(?:\(|[\w_\$])|\(|)(\s*(([\w_\$][\w\d_\$]*)([,\s]*)?)*)/gim
+	var matches = pattern.exec(this.toString())
+    return matches[1].split(',').map(s => s.trim()).filter(s => s.length)
+  }})
+})()
+
+const verifymade = (machine, ...options) => {
+  if (!(machine instanceof Make))
+    machine = new Make(machine, ...options)
+  return machine
+}
+
 class ExtensibleFunction extends Function {
   constructor(f) {
-    return Object.setPrototypeOf(f, new.target.prototype);
+    if(f.call === undefined) {
+      debugger
+    }
+    let fl = function() { return f(...arguments) }
+    Object.defineProperty(fl, "length", { value: f.length })
+    Object.defineProperty(fl, "toString", { value: () => f.toString() })
+    return Object.setPrototypeOf(fl, new.target.prototype);
   }
 }
 
-class Make extends ExtensibleFunction {
 
+class Make extends ExtensibleFunction {
+  constructor(funcs, ...options) {
+    if (funcs.call != undefined)
+      funcs = [funcs]
+
+    let f = funcs[0]
+    // concatenate to multivariate step
+    if (funcs.length > 1) {
+      let ivs = funcs.map(u => u.toString())
+      let predicate = Object.defineProperty(
+        funcs.reduce((f,p,i) => (...x) => f(...x) && p(x[i]), () => true),
+        'toString', { value: () => `(${funcs.map((p, i) => `p${i}`).join(', ')}) => ${funcs.map((p, i) => `p${i} == '${ivs[i]}'`).join(' && ')}` }
+      )
+      f = predicate
+    }
+
+    // rationalise
+    // value->predicate step
+    if (f == unit)
+      f = _unitmachine
+    else if (typeof(f) == 'string')
+      f = eval(`p => p == '${f}'`)
+    else if (typeof(f) == 'number' || typeof(machine) == 'boolean')
+      f = eval(`p => p == ${f}`)
+    else if (typeof(f) == 'object')
+      f = eval(`p => Match.objectEqual(p, ${JSON.stringify(f)})`)
+    else if (f.call)
+      f = f
+
+    super(f)
+    this.options = options
+  }
 }
 
 class Input {
@@ -123,7 +177,8 @@ class Match {
     if (pass) {
       let rewindpoint = location.start
       this.advance(machine.length)
-      if (machine.repeater) {
+
+      if (machine.repeater /* until */ ) {
         this.advance(-machine.length)
         value = []
         while (true) {
@@ -150,6 +205,20 @@ class Match {
           }
         }
       }
+
+      if (machine.lookahead /* before */ ) {
+        // TODO: this has to work for other input types
+        let restinput = this.input.slice(this.position)
+        //
+        let complete = null
+        match(...restinput)(
+          make(machine.lookahead)(result => complete = result),
+          _
+        )
+        if (complete === null)
+          return unit
+      }
+
       let result = { value, signal: pass, location }
       if (machine.suffixes) {
         machine.suffixes.forEach(suffix => suffix.bind(this)(result))
@@ -172,7 +241,7 @@ class Match {
     return this.position >= this.input.length
   }
   static before(predicate) {
-    let machine = new Make(predicate)
+    let machine = new Make(predicate, "before")
     return machine
   }
   static objectEqual(left, right) {
@@ -234,35 +303,9 @@ class Match {
    * @returns {function} The predicate-machine, callable
    */
   static make(predicatevalue, ...rest) {
-    let made = []
     rest.unshift(predicatevalue)
-
-    // concatenate to multivariate step
-    if (rest.filter(r => !(r instanceof Make)).length > 1) {
-      made = rest.filter(r => r instanceof Make)
-      let unmade = rest.filter(r => !(r instanceof Make))
-      let ivs = unmade.map(u => u.toString())
-      let predicate = Object.defineProperty(
-        unmade.reduce((f,p,i) => (...x) => f(...x) && p(x[i]), () => true),
-        'toString', { value: () => `(${unmade.map((p, i) => `p${i}`).join(', ')}) => ${unmade.map((p, i) => `p${i} == '${ivs[i]}'`).join(' && ')}` }
-      )
-    console.log(predicate.toString(), rest)
-      rest = [predicate]
-    }
-
-    let machine = rest[0]
-
-    // rationalise
-    // value->predicate step
-    if (machine == unit)
-      machine = new Make(_unitmachine)
-    if (typeof(machine) == 'string')
-      machine = new Make(eval(`p => p == '${machine}'`))
-    if (typeof(machine) == 'number' || typeof(machine) == 'boolean')
-      machine = new Make(eval(`p => p == ${machine}`))
-    if (typeof(machine) == 'object')
-      machine = new Make(eval(`p => Match.objectEqual(p, ${JSON.stringify(machine)})`))
-
+    let machine = verifymade(rest)
+    let made = []
 
     let terminator = function (ok, fault = () => unit) {
       let terminatingmachine = function () {
@@ -328,21 +371,27 @@ class Match {
 
     // terminator#until
     let until = function(umachine) {
+      umachine = verifymade(umachine)
       let until$terminator = function(ok, fault = () => unit) {
-          machine.repeater = umachine
-          return terminator(ok, fault)
+        machine.repeater = umachine
+        return terminator(ok, fault)
       }
-      until$terminator.break = () => until$terminator;
-      /*() => {
-        if (machine.suffixes === undefined)
-          machine.suffixes = []
-        machine.suffixes.push(function(){
-          this.break()
-         })
-      }*/
+      until$terminator.break = () => until$terminator
       return until$terminator
     }
     terminator.until = until
+
+    // terminator#before
+    let before = function(bmachine) {
+      bmachine = verifymade(bmachine)
+      let before$terminator = function(ok, fault = () => unit) {
+        machine.lookahead = bmachine
+        return terminator(ok, fault)
+      }
+      before$terminator.break = () => before$terminator
+      return before$terminator
+    }
+    terminator.before = before
 
 
     // TODO: this is duplicated above
@@ -382,6 +431,8 @@ class Match {
     return notmachine
   }
 }
+
+const { match, make } = Match
 
 module.exports = {
   Match

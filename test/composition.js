@@ -34,7 +34,7 @@ describe('scenario: match(..."xxxyzxxxxxyz") can until()', () => {
   it(`should make('x').until('x') as 'xxx'`, () => {
     let found = ""
     match(..."xxxyz")(
-      make('x').until(p => p == 'y')(result => found = result.value.map(x=>x).join("")),
+      make('x').until('y')(result => found = result.value.map(x=>x).join("")),
       _
     )
     assert.equal(found, "xxx")
@@ -47,5 +47,32 @@ describe('scenario: match(..."xxxyzxxxxxyz") can until()', () => {
       _
     )
     assert.equal(JSON.stringify(found), JSON.stringify(["xxx", "xxxxx"]))
+  })
+})
+
+describe('scenario: match(..."abAB") with "a" before "A"', () => {
+  it(`should make('a').before('A') as 'a'`, () => {
+    let found = []
+    match(...'abAB')(
+      make('a').before('A')(result => found.push(result.value)),
+      _
+    )
+    assert.equal(JSON.stringify(found), JSON.stringify([['a']]))
+  })
+  it(`should not make('a').before('C')`, () => {
+    let found = []
+    match(...'abAB')(
+      make('a').before('C')(result => found.push(result.value)),
+      _
+    )
+    assert.equal(JSON.stringify(found), JSON.stringify([]))
+  })
+  it(`should not make('A').before('a')`, () => {
+    let found = []
+    match(...'abAB')(
+      make('A').before('a')(result => found.push(result.value)),
+      _
+    )
+    assert.equal(JSON.stringify(found), JSON.stringify([]))
   })
 })

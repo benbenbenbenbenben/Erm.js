@@ -9,7 +9,7 @@ let leftup = p => p.type == "mouseup" && p.which == 1
 
 let keydown = p => p.type == "keydown"
 let keyup = p => p.type == "keyup"
-let andkeyup = (p, q) => keydown(p) && keyup(q) && p.which == q.which
+let andkeyup = (p, q$0) => keyup(p) && p.which == q$0.which
 
 
 let leftclick = (p, q) => leftdown(p) && leftup(q) && !move(p, q)
@@ -20,7 +20,7 @@ let keystroke = (p, q) => keydown(p) && keyup(q) && p.which == q.which
 match(...data.steps)(
   make(doubleclick).stream(d => console.log("doubleclick")),
   make(leftclick).stream(d => console.log("click")),
-  make(keydown, before(keyup))(k => console.log(String.fromCharCode(k.value[0].which))),
+  make(keydown).before(andkeyup)(k => console.log(String.fromCharCode(k.value[0].which))),
   //make(keyup)(k => console.log(String.fromCharCode(k.value[0].which))),
   _
 )
