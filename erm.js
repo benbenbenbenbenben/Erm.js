@@ -52,7 +52,9 @@ class Make extends ExtensibleFunction {
       )
       f = predicate
     }
-
+    if (f === undefined) {
+      debugger
+    }
     // rationalise
     // value->predicate step
     if (f == unit)
@@ -370,7 +372,7 @@ class Match {
     }*/
 
     // terminator#until
-    let until = function(umachine) {
+    let until = function(...umachine) {
       umachine = verifymade(umachine)
       let until$terminator = function(ok, fault = () => unit) {
         machine.repeater = umachine

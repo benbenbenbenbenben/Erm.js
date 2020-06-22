@@ -1,8 +1,8 @@
 {
   "name": "erm-js",
-  "version": "0.1.1",
+  "version": "0.1.3",
   "description": "The Esoteric Reactive Machine",
-  "main": "index.js",
+  "main": "erm.js",
   "scripts": {
     "test": "jest"
   },
@@ -31,10 +31,8 @@
   },
   "homepage": "https://github.com/benbenbenbenbenben/erm.js#readme",
   "dependencies": {
-    "chalk": "^2.1.0"
-  },
-  "devDependencies": {
-    "jsdoc": "^3.6.4",
-    "jest": "^26.0.1"
+    "@types/jest": "^26.0.0",
+    "jest": "^26.0.1",
+    "jsdoc": "^3.6.4"
   }
 }
