@@ -31,10 +31,10 @@
   },
   "homepage": "https://github.com/benbenbenbenbenben/erm.js#readme",
   "dependencies": {
-    "chalk": "^2.1.0",
-    "jest": "^26.0.1"
+    "chalk": "^2.1.0"
   },
   "devDependencies": {
-    "jsdoc": "^3.6.4"
+    "jsdoc": "^3.6.4",
+    "jest": "^26.0.1"
   }
 }
