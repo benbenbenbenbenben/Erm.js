@@ -1,7 +1,5 @@
 # erm.js - The Esoteric Reducing Machine
 
-### Now 0.1.0 ALPHA!
-
 erm.js creates composable machines for pattern matching.
 
 ```javascript
