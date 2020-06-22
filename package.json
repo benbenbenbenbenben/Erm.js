@@ -4,11 +4,11 @@
   "description": "The Esoteric Reactive Machine",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest"
   },
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@gitlab.seance.io:ourben/erm.js.git"
+    "url": "https://github.com/benbenbenbenbenben/Erm.js.git"
   },
   "keywords": [
     "erm.js",
@@ -32,11 +32,9 @@
   "homepage": "https://github.com/benbenbenbenbenben/erm.js#readme",
   "dependencies": {
     "chalk": "^2.1.0",
-    "jsdox": "^0.4.10"
+    "jest": "^26.0.1"
   },
   "devDependencies": {
-    "jsdoc": "^3.5.4",
-    "mocha": "^3.5.0",
-    "semantic-release-gitlab": "^4.0.17"
+    "jsdoc": "^3.6.4"
   }
 }
